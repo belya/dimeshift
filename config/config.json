@@ -12,7 +12,6 @@
     "imap": {
       "inbox": "INBOX",
       "user": "belchikov1996@gmail.com",
-      "password": "semraz01mer0dyn01re9!",
       "host": "imap.gmail.com",
       "port": 993,
       "tls": true

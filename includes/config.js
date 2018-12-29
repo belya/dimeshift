@@ -32,4 +32,6 @@ if (config['port'] === 0) {
 	config['port'] = getPort;
 }
 
+config.imap['password'] = process.env["DIMESHIFT_IMAP_PASSWORD"]
+
 module.exports = config;
