@@ -42,6 +42,7 @@ module.exports = function(sequelize, DataTypes) {
 		},
 		datetime: {
 			type: DataTypes.INTEGER,
+			unique: true,
 			field: "datetime"
 		}
 	}, {

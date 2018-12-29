@@ -100,7 +100,7 @@ App.settings = {
 		"BTC": "Bitcoin",
 		"BTN": "Bhutanese Ngultrum",
 		"BWP": "Botswanan Pula",
-		"BYR": "Belarusian Ruble",
+		"BYN": "Belarusian Ruble",
 		"BZD": "Belize Dollar",
 		"CAD": "Canadian Dollar",
 		"CDF": "Congolese Franc",

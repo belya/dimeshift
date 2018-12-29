@@ -59,6 +59,8 @@ var reloadRatesYahoo = function(callback) {
 
 		if (typeof(callback) === 'function')
 			callback(cached);
+	}).catch(function(err) {
+		console.log("Yahoo error appeared")
 	});
 };
 

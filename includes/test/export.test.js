@@ -1,5 +1,5 @@
 var rfr = require('rfr');
-var exportTransactions = rfr('tools/export_email_transactions');
+var exportTransactions = rfr('includes/exporter');
 var chai = require('chai')
 var expect = require('chai').expect;
 var assert = require('chai').assert;
@@ -10,6 +10,23 @@ var moment = require('moment')
 chai.use(spies);
 
 beforeEach(function(done) {
+  db.User.create({
+    "id": 123,
+    "login": "some_user",
+    "email": "test@email.com",
+    "password": "124"
+  }).then(function(user) {
+    return db.Wallet.create({
+      "id": 123,
+      "name": "Some wallet",
+      "user_id": user.id
+    })
+  }).then(function() {
+    done()
+  })
+})
+
+afterEach(function(done) {
   db.Transaction.destroy({
     where: {},
   }).then(function() {
@@ -17,10 +34,9 @@ beforeEach(function(done) {
       where: {},
     })  
   }).then(function() {
-    return db.Wallet.create({
-      "id": 123,
-      "name": "Some wallet"
-    })
+    return db.User.destroy({
+      where: {},
+    })  
   }).then(function() {
     done()
   })
@@ -44,10 +60,22 @@ BLR/ONLINE SERVICE/VELCOM PO N TELEFONA: 447494825
     assert.ok(transaction["datetime"].getTime() == new Date("2018-12-29T19:46:48").getTime())
   })
 
-  it("returns main wallet id", function(done) {
-    exportTransactions.getWalletId()
-    .then(function(walletId) {
-      assert.ok(walletId == 123)
+  it("returns main wallet", function(done) {
+    exportTransactions.getWallet()
+    .then(function(wallet) {      
+      assert.ok(wallet.id == 123)
+      assert.ok(wallet.user_id == 123)
+      done()
+    })
+  })
+
+  it("throws exception when no wallet", function(done) {
+    db.Wallet.destroy({
+      where: {},
+    }).then(function() {
+      return exportTransactions.getWallet()
+    }).catch(function(wallet) {
+      assert.ok(true)
       done()
     })
   })
@@ -64,8 +92,8 @@ BLR/ONLINE SERVICE/VELCOM PO N TELEFONA: 447494825
       }
     });
 
-
-    exportTransactions.createTransactions([message])  
+    // Check for duplicates also 
+    exportTransactions.createTransactions([message, message]) 
     .then(function() {
       return db.Transaction.findOne()  
     }).then(function(transaction) {
@@ -73,30 +101,22 @@ BLR/ONLINE SERVICE/VELCOM PO N TELEFONA: 447494825
       assert.ok(transaction["description"] == "test")
       assert.ok(transaction["datetime"] == Math.ceil(date.getTime() / 1000))
       assert.ok(transaction["wallet_id"] == 123)
+      return db.Transaction.count()
+    }).then(function(transactions) {
+      assert.ok(transactions == 1)
       done()
     })
   })
 
-  it("returns last transaction date", function(done) {
-    // WAT The hell with dates?
-    var date = new Date(2010, 4, 20)
-    var previousDate = new Date(2010, 3, 20)
-    db.Transaction.bulkCreate([{
-      "datetime": date.getTime() / 1000
-    }, {
-      "datetime": previousDate.getTime() / 1000
-    }]).then(function(transaction) {
-      return exportTransactions.getLastTransactionDate()
-    }).then(function(date) {
-      assert.ok(date == 'May 20, 2010')
-      done()
-    })
+  it("returns today date", function(done) {
+    var stringDate = exportTransactions.getToday()
+    assert.ok(stringDate == moment().format("MMM DD, YYYY"))
+    done()
   })
 
   it("converts base64 to utf-8 string", function() {
     var base64 = "0JrQsNGA0YLQsCA0LjM0MzMK0KHQviDRgdGH0ZHRgtCwOiBCWTI5QUxGQTMwMTQ2\r\nNjU3NTMwMDcwMjcwMDAwCtCf0LXRgNC10LLQvtC0ICjQodC/0LjRgdCw0L3QuNC1\r\nKQrQo9GB0L/QtdGI0L3QvgrQodGD0LzQvNCwOjAuMjAgQllOCtCe0YHRgtCw0YLQ\r\nvtC6OjAuMTAgQllOCtCd0LAg0LLRgNC10LzRjzoxOTo0Njo0OApCTFIvT05MSU5F\r\nIFNFUlZJQ0UvVkVMQ09NIFBPIE4gVEVMRUZPTkE6IDQ0NzQ5NDgyNQoyOS4xMi4y\r\nMDE4IDE5OjQ2OjQ4DQo="
     var message = exportTransactions.convertBase64ToString(base64)
-    console.log(message)
     assert.ok(message.indexOf("Карта") != -1)
   })
 
@@ -108,19 +128,25 @@ BLR/ONLINE SERVICE/VELCOM PO N TELEFONA: 447494825
     })
   })
 
+  it("returns message bodies from empty gmail", function(done) {
+    exportTransactions.getMessages(["FROM" , 'wrong@email.com'])
+    .then(function(messages) {
+      assert.ok(messages.length == 0)
+      done()
+    })
+  })
+
   it("synchronizes messages to database", function(done) {
     var testMessages = ["Test", "messages"]
     var testLastDate = "test date"
 
+    var getTodaySpy = chai.spy.on(exportTransactions, 'getToday', function() {
+      return testLastDate
+    });
+
     var getMessagesSpy = chai.spy.on(exportTransactions, 'getMessages', function() {
       return new Promise((resolve, reject) => {
         resolve(testMessages)
-      })
-    });
-
-    var getLastTransactionDateSpy = chai.spy.on(exportTransactions, 'getLastTransactionDate', function() {
-      return new Promise(function(resolve, reject) {
-        resolve(testLastDate)
       })
     });
 
@@ -133,8 +159,8 @@ BLR/ONLINE SERVICE/VELCOM PO N TELEFONA: 447494825
 
     exportTransactions.synchronize()
     .then(function() {
-      expect(getLastTransactionDateSpy).to.have.been.called();
-      expect(getMessagesSpy).to.have.been.called.with(["SINCE", testLastDate]);
+      expect(getTodaySpy).to.have.been.called();
+      expect(getMessagesSpy).to.have.been.called.with(["FROM" , 'click@alfa-bank.by'], ["SINCE", testLastDate]);
       expect(createTransactionsSpy).to.have.been.called.with(testMessages);
       done()
     })

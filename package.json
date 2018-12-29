@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
+    "export": "node ./tools/export_email_transactions",
     "test": "node_modules/.bin/mocha includes/test/export.test.js --timeout 5000",
     "postinstall": "bower install"
   },
