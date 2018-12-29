@@ -6,6 +6,6 @@
 	"keywords": ["node", "finances", "money", "HTML5", "Sequelize", "Backbone.js", "Restify"],
 	"addons": ["heroku-postgresql:hobby-dev", "sparkpost:free"],
 	"env": {
-		"NODE_ENV": "heroku"
+		"NODE_ENV": "development"
 	}
 }

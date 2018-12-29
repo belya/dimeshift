@@ -9,6 +9,14 @@
       "host": "127.0.0.1",
       "storage": "data/database.sqlite"
     },
+    "imap": {
+      "inbox": "INBOX",
+      "user": "belchikov1996@gmail.com",
+      "password": "semraz01mer0dyn01re9!",
+      "host": "imap.gmail.com",
+      "port": 993,
+      "tls": true
+    },
     "smtp": {
       "host": "mailtrap.io",
       "username": "38298e68fa9771771",
@@ -46,7 +54,11 @@
   "test": {
     "port": 8081,
     "database": {
-      "dialect": "sqlite",
+      "dialect": "mysql",
+      "username": "root",
+      "password": "root",
+      "database": "walletjs_test",
+      "host": "127.0.0.1",
       "storage": "data/database.sqlite"
     },
     "smtp": null,
